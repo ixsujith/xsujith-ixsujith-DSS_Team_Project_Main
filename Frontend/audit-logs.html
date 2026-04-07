@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Query Tool — Audit Logs</title>
+    <link rel="stylesheet" href="css/style.css" />
+  </head>
+  <body>
+    <!-- ── Navbar ── -->
+    <nav class="navbar">
+      <a href="index.html" class="brand">⚙ Query Tool</a>
+      <ul class="nav-links">
+        <li><a href="index.html">DB Config</a></li>
+        <li><a href="query-management.html">Queries</a></li>
+        <li><a href="query-execution.html">Execute</a></li>
+        <li><a href="audit-logs.html" class="active">Audit Logs</a></li>
+      </ul>
+    </nav>
+
+    <!-- ── Page Content ── -->
+    <div class="container">
+      <h1 class="page-title">Audit Logs</h1>
+
+      <!-- ── Filter + Summary Card ── -->
+      <div class="card">
+        <h2 class="card-title">Filter Logs</h2>
+
+        <div
+          style="
+            display: flex;
+            align-items: flex-end;
+            gap: 16px;
+            flex-wrap: wrap;
+          "
+        >
+          <!-- Filter by DB Type -->
+          <div class="form-group" style="margin-bottom: 0; min-width: 220px">
+            <label for="filterDbType">Filter by DB Type</label>
+            <select id="filterDbType">
+              <option value="">-- All Types --</option>
+              <!-- Populated dynamically -->
+            </select>
+          </div>
+
+          <!-- Refresh Button -->
+          <button
+            class="btn btn-secondary"
+            id="refreshBtn"
+            style="margin-bottom: 0"
+          >
+            ↻ Refresh
+          </button>
+        </div>
+      </div>
+
+      <!-- ── Logs Table Card ── -->
+      <div class="card">
+        <h2 class="card-title">Failed Query Log</h2>
+
+        <!-- Summary Bar -->
+        <div
+          id="logSummary"
+          style="
+            font-size: 13px;
+            color: #555;
+            margin-bottom: 16px;
+            display: none;
+          "
+        ></div>
+
+        <!-- Alert Box -->
+        <div id="tableAlert" class="alert"></div>
+
+        <!-- Spinner -->
+        <div id="tableSpinner" class="spinner">Loading audit logs...</div>
+
+        <!-- Table -->
+        <div class="table-wrapper" id="tableWrapper" style="display: none">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Timestamp</th>
+                <th>DB Type</th>
+                <th>Query Text</th>
+                <th>Error Message</th>
+              </tr>
+            </thead>
+            <tbody id="logsTableBody">
+              <!-- Filled by audit-logs.js -->
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Empty State -->
+        <div id="emptyState" class="empty-state" style="display: none">
+          <div style="font-size: 32px; margin-bottom: 12px">✅</div>
+          <div>No failures logged. Everything is running clean.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Query Text Modal ── -->
+    <div
+      id="modalOverlay"
+      style="
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 100;
+        justify-content: center;
+        align-items: center;
+      "
+    >
+      <div
+        style="
+          background: #fff;
+          border-radius: 10px;
+          padding: 28px;
+          max-width: 640px;
+          width: 90%;
+          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
+        "
+      >
+        <div
+          style="
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+          "
+        >
+          <h3 style="font-size: 16px; color: #1e3a5f; font-weight: 700">
+            Full Query Text
+          </h3>
+          <button
+            onclick="closeModal()"
+            style="
+              background: none;
+              border: none;
+              font-size: 20px;
+              cursor: pointer;
+              color: #888;
+              line-height: 1;
+            "
+          >
+            ✕
+          </button>
+        </div>
+        <pre
+          id="modalQueryText"
+          style="
+            background: #f0f2f5;
+            border: 1px solid #d1d9e0;
+            border-radius: 6px;
+            padding: 14px 16px;
+            font-family: &quot;Courier New&quot;, monospace;
+            font-size: 13px;
+            color: #1e3a5f;
+            white-space: pre-wrap;
+            word-break: break-word;
+            margin-bottom: 16px;
+            max-height: 300px;
+            overflow-y: auto;
+          "
+        ></pre>
+        <div style="text-align: right">
+          <button class="btn btn-secondary" onclick="closeModal()">
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <script src="js/api.js"></script>
+    <script src="js/audit-logs.js"></script>
+  </body>
+</html>

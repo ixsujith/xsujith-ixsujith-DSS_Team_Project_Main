@@ -1,0 +1,592 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Query Tool — Query Management</title>
+    <link rel="stylesheet" href="css/style.css" />
+    <style>
+      /* ── Query Builder Panel ── */
+      .builder-toggle {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        cursor: pointer;
+        user-select: none;
+      }
+
+      .builder-toggle .toggle-icon {
+        font-size: 18px;
+        transition: transform 0.2s;
+      }
+
+      .builder-toggle.open .toggle-icon {
+        transform: rotate(90deg);
+      }
+
+      .builder-body {
+        display: none;
+        margin-top: 20px;
+        padding-top: 20px;
+        border-top: 1px solid #e8edf3;
+      }
+
+      .builder-body.open {
+        display: block;
+      }
+
+      /* ── Builder Steps ── */
+      .builder-section {
+        margin-bottom: 20px;
+        padding: 16px;
+        background: #f8fafc;
+        border: 1px solid #e8edf3;
+        border-radius: 8px;
+      }
+
+      .builder-section-title {
+        font-size: 13px;
+        font-weight: 700;
+        color: #1e3a5f;
+        margin-bottom: 12px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .builder-section-badge {
+        background: #1e3a5f;
+        color: #fff;
+        border-radius: 50%;
+        width: 20px;
+        height: 20px;
+        font-size: 11px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+
+      /* ── Column Checkboxes ── */
+      .column-checkboxes {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 8px;
+      }
+
+      .column-checkbox-item {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        background: #fff;
+        border: 1px solid #d1d9e0;
+        border-radius: 6px;
+        padding: 6px 12px;
+        cursor: pointer;
+        font-size: 13px;
+        transition:
+          border-color 0.15s,
+          background 0.15s;
+      }
+
+      .column-checkbox-item:hover {
+        border-color: #1e3a5f;
+        background: #f0f4f8;
+      }
+
+      .column-checkbox-item input[type="checkbox"] {
+        width: auto;
+        margin: 0;
+        cursor: pointer;
+        accent-color: #1e3a5f;
+      }
+
+      /* ── JOIN Rows ── */
+      .join-row {
+        display: grid;
+        grid-template-columns: 1fr 120px 1fr 1fr auto;
+        gap: 8px;
+        align-items: center;
+        margin-bottom: 8px;
+      }
+
+      .join-row select,
+      .join-row input {
+        padding: 8px 10px;
+        border: 1px solid #d1d9e0;
+        border-radius: 6px;
+        font-size: 13px;
+        background: #fff;
+        outline: none;
+      }
+
+      .join-row select:focus,
+      .join-row input:focus {
+        border-color: #1e3a5f;
+      }
+
+      /* ── WHERE Rows ── */
+      .where-row {
+        display: grid;
+        grid-template-columns: 1fr 120px 1fr auto;
+        gap: 8px;
+        align-items: center;
+        margin-bottom: 8px;
+      }
+
+      .where-row select,
+      .where-row input {
+        padding: 8px 10px;
+        border: 1px solid #d1d9e0;
+        border-radius: 6px;
+        font-size: 13px;
+        background: #fff;
+        outline: none;
+      }
+
+      .where-row select:focus,
+      .where-row input:focus {
+        border-color: #1e3a5f;
+      }
+
+      .remove-btn {
+        background: none;
+        border: none;
+        color: #dc3545;
+        font-size: 18px;
+        cursor: pointer;
+        line-height: 1;
+        padding: 4px;
+        border-radius: 4px;
+        transition: background 0.15s;
+      }
+
+      .remove-btn:hover {
+        background: #fdecea;
+      }
+
+      .add-row-btn {
+        background: none;
+        border: 1px dashed #1e3a5f;
+        color: #1e3a5f;
+        border-radius: 6px;
+        padding: 7px 16px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.15s;
+        margin-top: 4px;
+      }
+
+      .add-row-btn:hover {
+        background: #f0f4f8;
+      }
+
+      /* ── Generated SQL Preview ── */
+      .generated-sql-box {
+        background: #1e3a5f;
+        border-radius: 8px;
+        padding: 16px;
+        font-family: "Courier New", monospace;
+        font-size: 13px;
+        color: #a8d8ea;
+        white-space: pre-wrap;
+        word-break: break-word;
+        min-height: 60px;
+        line-height: 1.6;
+      }
+
+      .generated-sql-box .sql-keyword {
+        color: #ffd700;
+        font-weight: 700;
+      }
+      .generated-sql-box .sql-column {
+        color: #87ceeb;
+      }
+
+      /* ── Live Search ── */
+      .search-wrapper {
+        position: relative;
+        margin-bottom: 20px;
+      }
+
+      .search-wrapper input {
+        width: 100%;
+        padding: 10px 14px 10px 38px;
+        border: 1px solid #d1d9e0;
+        border-radius: 6px;
+        font-size: 14px;
+        color: #333;
+        background: #fafbfc;
+        outline: none;
+        transition: border-color 0.2s;
+      }
+
+      .search-wrapper input:focus {
+        border-color: #1e3a5f;
+        background: #fff;
+      }
+
+      .search-wrapper .search-icon {
+        position: absolute;
+        left: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #999;
+        pointer-events: none;
+      }
+
+      .search-count {
+        font-size: 12px;
+        color: #888;
+        margin-bottom: 12px;
+      }
+
+      .highlight {
+        background: #fff3cd;
+        border-radius: 2px;
+        padding: 0 1px;
+      }
+
+      /* ── Test Run Results Area ── */
+      .test-run-area {
+        margin-top: 20px;
+        padding-top: 20px;
+        border-top: 2px dashed #d1d9e0;
+      }
+
+      .test-run-title {
+        font-size: 14px;
+        font-weight: 700;
+        color: #1e3a5f;
+        margin-bottom: 12px;
+      }
+
+      .test-run-summary {
+        font-size: 13px;
+        color: #555;
+        margin-bottom: 12px;
+        padding: 10px 14px;
+        background: #d4edda;
+        border: 1px solid #c3e6cb;
+        border-radius: 6px;
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- ── Navbar ── -->
+    <nav class="navbar">
+      <a href="index.html" class="brand">⚙ Query Tool</a>
+      <ul class="nav-links">
+        <li><a href="index.html">DB Config</a></li>
+        <li><a href="query-management.html" class="active">Queries</a></li>
+        <li><a href="query-execution.html">Execute</a></li>
+        <li><a href="audit-logs.html">Audit Logs</a></li>
+      </ul>
+    </nav>
+
+    <div class="container">
+      <h1 class="page-title">Query Management</h1>
+
+      <!-- ── Query Builder Card ── -->
+      <div class="card">
+        <div class="builder-toggle" id="builderToggle">
+          <span class="toggle-icon">▶</span>
+          <span style="font-size: 15px; font-weight: 700; color: #1e3a5f">
+            🧱 Visual Query Builder
+          </span>
+          <span style="font-size: 12px; color: #888; margin-left: 4px">
+            — build a query without writing SQL
+          </span>
+        </div>
+
+        <div class="builder-body" id="builderBody">
+          <div id="builderAlert" class="alert"></div>
+
+          <!-- Builder Step 1: Connection -->
+          <div class="builder-section">
+            <div class="builder-section-title">
+              <span class="builder-section-badge">1</span>
+              Select Connection
+            </div>
+            <div class="form-row">
+              <div class="form-group" style="margin: 0">
+                <label for="builderDbType">Database Type</label>
+                <select id="builderDbType">
+                  <option value="">-- Select DB Type --</option>
+                </select>
+              </div>
+              <div class="form-group" style="margin: 0">
+                <label for="builderConnection">Connection</label>
+                <select id="builderConnection" disabled>
+                  <option value="">-- Select DB Type first --</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- Builder Step 2: Table -->
+          <div
+            class="builder-section"
+            id="builderStep2"
+            style="opacity: 0.4; pointer-events: none"
+          >
+            <div class="builder-section-title">
+              <span class="builder-section-badge">2</span>
+              Select Table
+            </div>
+            <div class="form-group" style="margin: 0; max-width: 300px">
+              <select id="builderTable">
+                <option value="">-- Select a connection first --</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Builder Step 3: Columns -->
+          <div
+            class="builder-section"
+            id="builderStep3"
+            style="opacity: 0.4; pointer-events: none"
+          >
+            <div class="builder-section-title">
+              <span class="builder-section-badge">3</span>
+              Select Columns
+              <span style="font-weight: 400; color: #888; font-size: 12px">
+                (leave all unchecked to select *)
+              </span>
+            </div>
+            <div class="column-checkboxes" id="columnCheckboxes">
+              <span style="color: #888; font-size: 13px"
+                >Select a table to see columns</span
+              >
+            </div>
+          </div>
+
+          <!-- Builder Step 4: JOIN (optional) -->
+          <div
+            class="builder-section"
+            id="builderStep4"
+            style="opacity: 0.4; pointer-events: none"
+          >
+            <div class="builder-section-title">
+              <span class="builder-section-badge">4</span>
+              Add JOIN
+              <span style="font-weight: 400; color: #888; font-size: 12px"
+                >(optional)</span
+              >
+            </div>
+            <div id="joinRows"></div>
+            <button class="add-row-btn" id="addJoinBtn">+ Add JOIN</button>
+          </div>
+
+          <!-- Builder Step 5: WHERE conditions (optional) -->
+          <div
+            class="builder-section"
+            id="builderStep5"
+            style="opacity: 0.4; pointer-events: none"
+          >
+            <div class="builder-section-title">
+              <span class="builder-section-badge">5</span>
+              Add WHERE Conditions
+              <span style="font-weight: 400; color: #888; font-size: 12px"
+                >(optional)</span
+              >
+            </div>
+            <div id="whereRows"></div>
+            <button class="add-row-btn" id="addWhereBtn">
+              + Add Condition
+            </button>
+          </div>
+
+          <!-- Generated SQL Preview -->
+          <div
+            class="builder-section"
+            id="builderStep6"
+            style="opacity: 0.4; pointer-events: none"
+          >
+            <div class="builder-section-title">
+              <span class="builder-section-badge">6</span>
+              Generated SQL
+            </div>
+            <div class="generated-sql-box" id="generatedSql">
+              Select a table to generate SQL...
+            </div>
+            <div class="btn-group" style="margin-top: 14px">
+              <button class="btn btn-primary" id="useQueryBtn">
+                ✓ Use This Query
+              </button>
+              <button class="btn btn-secondary" id="resetBuilderBtn">
+                Reset Builder
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Add Query Form Card ── -->
+      <div class="card">
+        <h2 class="card-title">Add New Query</h2>
+        <div id="formAlert" class="alert"></div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="queryName">Query Name</label>
+            <input
+              type="text"
+              id="queryName"
+              placeholder="e.g. All Employees"
+            />
+          </div>
+          <div class="form-group">
+            <label for="dbType">Database Type</label>
+            <select id="dbType">
+              <option value="">-- Select Type --</option>
+            </select>
+          </div>
+
+          <!-- ── Test Connection Selector (shown when DB type is selected) ── -->
+          <div
+            class="form-group"
+            id="testConnectionGroup"
+            style="display: none"
+            style="grid-auto-flow: column"
+          >
+            <label for="testConnection">
+              Test Connection
+              <span style="color: #888; font-weight: 400; font-size: 12px">
+                — required for test run
+              </span>
+            </label>
+            <select id="testConnection">
+              <option value="">-- Select Connection --</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="description">Description</label>
+          <input
+            type="text"
+            id="description"
+            placeholder="e.g. Fetches all records from employees table"
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="queryText">SQL Query</label>
+          <textarea
+            id="queryText"
+            rows="5"
+            placeholder="e.g. SELECT * FROM employees"
+          ></textarea>
+        </div>
+
+        <!-- ── Buttons ── -->
+        <div class="btn-group">
+          <button class="btn btn-primary" id="saveQueryBtn">Save Query</button>
+          <button class="btn btn-success" id="testRunBtn" disabled>
+            ▶ Test Run
+          </button>
+          <button class="btn btn-secondary" id="clearBtn">Clear</button>
+        </div>
+
+        <!-- ── Test Run Results ── -->
+        <div class="test-run-area" id="testRunArea" style="display: none">
+          <div class="test-run-title">🧪 Test Run Results</div>
+
+          <div id="testRunAlert" class="alert"></div>
+          <div id="testRunSpinner" class="spinner">Running test query...</div>
+
+          <div class="test-run-summary" id="testRunSummary"></div>
+
+          <div
+            class="table-wrapper"
+            id="testRunTableWrapper"
+            style="display: none"
+          >
+            <table>
+              <thead id="testRunTableHead"></thead>
+              <tbody id="testRunTableBody"></tbody>
+            </table>
+          </div>
+
+          <div id="testRunEmptyState" class="empty-state" style="display: none">
+            Query returned no results.
+          </div>
+
+          <div class="pagination" id="testRunPagination" style="display: none">
+            <button id="testRunPrevBtn" disabled>← Prev</button>
+            <span id="testRunPageInfo"></span>
+            <button id="testRunNextBtn">Next →</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Saved Queries Card ── -->
+      <div class="card">
+        <h2 class="card-title">Saved Queries</h2>
+
+        <!-- Live Search + Filter Row -->
+        <div
+          style="
+            display: flex;
+            gap: 16px;
+            align-items: flex-end;
+            flex-wrap: wrap;
+            margin-bottom: 8px;
+          "
+        >
+          <div
+            class="search-wrapper"
+            style="flex: 1; min-width: 220px; margin-bottom: 0"
+          >
+            <span class="search-icon">🔍</span>
+            <input
+              type="text"
+              id="searchInput"
+              placeholder="Search by name or description..."
+              autocomplete="off"
+            />
+          </div>
+          <div class="form-group" style="margin: 0; min-width: 200px">
+            <label for="filterDbType">Filter by DB Type</label>
+            <select id="filterDbType">
+              <option value="">-- All Types --</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="search-count" id="searchCount"></div>
+
+        <div id="tableAlert" class="alert"></div>
+        <div id="tableSpinner" class="spinner">Loading queries...</div>
+
+        <div class="table-wrapper" id="tableWrapper" style="display: none">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Name</th>
+                <th>Description</th>
+                <th>DB Type</th>
+                <th>Query Preview</th>
+                <th>Created At</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="queryTableBody"></tbody>
+          </table>
+        </div>
+
+        <div id="emptyState" class="empty-state" style="display: none">
+          No queries found.
+        </div>
+      </div>
+    </div>
+
+    <script src="js/api.js"></script>
+    <script src="js/query-management.js"></script>
+  </body>
+</html>

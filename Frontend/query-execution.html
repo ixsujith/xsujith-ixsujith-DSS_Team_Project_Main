@@ -1,0 +1,587 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Query Tool — Execute Query</title>
+    <link rel="stylesheet" href="css/style.css" />
+    <style>
+      /* ── Scratchpad ── */
+      .scratchpad-toggle {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        cursor: pointer;
+        user-select: none;
+        margin-bottom: 0;
+      }
+
+      .scratchpad-toggle .toggle-icon {
+        font-size: 18px;
+        transition: transform 0.2s;
+      }
+
+      .scratchpad-toggle.open .toggle-icon {
+        transform: rotate(90deg);
+      }
+
+      .scratchpad-body {
+        display: none;
+        margin-top: 20px;
+        padding-top: 20px;
+        border-top: 1px solid #e8edf3;
+      }
+
+      .scratchpad-body.open {
+        display: block;
+      }
+
+      /* ── Live Search ── */
+      .search-wrapper {
+        position: relative;
+      }
+
+      .search-wrapper input {
+        width: 100%;
+        padding: 10px 14px 10px 36px;
+        border: 1px solid #d1d9e0;
+        border-radius: 6px;
+        font-size: 14px;
+        color: #333;
+        background-color: #fafbfc;
+        outline: none;
+        transition: border-color 0.2s;
+      }
+
+      .search-wrapper input:focus {
+        border-color: #1e3a5f;
+        background-color: #fff;
+      }
+
+      .search-wrapper .search-icon {
+        position: absolute;
+        left: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #999;
+        font-size: 14px;
+        pointer-events: none;
+      }
+
+      .search-results {
+        display: none;
+        position: absolute;
+        top: calc(100% + 4px);
+        left: 0;
+        right: 0;
+        background: #fff;
+        border: 1px solid #d1d9e0;
+        border-radius: 6px;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+        z-index: 50;
+        max-height: 240px;
+        overflow-y: auto;
+      }
+
+      .search-results.open {
+        display: block;
+      }
+
+      .search-result-item {
+        padding: 10px 14px;
+        cursor: pointer;
+        font-size: 13px;
+        border-bottom: 1px solid #f0f2f5;
+        transition: background 0.15s;
+      }
+
+      .search-result-item:last-child {
+        border-bottom: none;
+      }
+
+      .search-result-item:hover,
+      .search-result-item.highlighted {
+        background-color: #f0f4f8;
+      }
+
+      .search-result-item .query-name {
+        font-weight: 600;
+        color: #1e3a5f;
+      }
+
+      .search-result-item .query-desc {
+        font-size: 12px;
+        color: #888;
+        margin-top: 2px;
+      }
+
+      .search-result-item .highlight {
+        background-color: #fff3cd;
+        border-radius: 2px;
+        padding: 0 1px;
+      }
+
+      .search-no-results {
+        padding: 14px;
+        font-size: 13px;
+        color: #888;
+        text-align: center;
+      }
+
+      /* ── Step Indicators ── */
+      .steps {
+        display: flex;
+        align-items: center;
+        gap: 0;
+        margin-bottom: 28px;
+      }
+
+      .step {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex: 1;
+      }
+
+      .step-circle {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        background: #e8edf3;
+        color: #999;
+        font-size: 13px;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        transition:
+          background 0.2s,
+          color 0.2s;
+      }
+
+      .step.active .step-circle {
+        background: #1e3a5f;
+        color: #fff;
+      }
+
+      .step.done .step-circle {
+        background: #28a745;
+        color: #fff;
+      }
+
+      .step-label {
+        font-size: 13px;
+        font-weight: 600;
+        color: #999;
+        transition: color 0.2s;
+      }
+
+      .step.active .step-label,
+      .step.done .step-label {
+        color: #1e3a5f;
+      }
+
+      .step-line {
+        flex: 1;
+        height: 2px;
+        background: #e8edf3;
+        margin: 0 8px;
+        transition: background 0.2s;
+      }
+
+      .step-line.done {
+        background: #28a745;
+      }
+
+      /* ── Selected Query Badge ── */
+      .selected-query-badge {
+        display: none;
+        align-items: center;
+        gap: 10px;
+        background: #f0f4f8;
+        border: 1px solid #d1d9e0;
+        border-radius: 6px;
+        padding: 10px 14px;
+        margin-top: 8px;
+        font-size: 13px;
+      }
+
+      .selected-query-badge.show {
+        display: flex;
+      }
+
+      .selected-query-badge .badge-name {
+        font-weight: 700;
+        color: #1e3a5f;
+      }
+
+      .selected-query-badge .badge-clear {
+        margin-left: auto;
+        background: none;
+        border: none;
+        color: #888;
+        cursor: pointer;
+        font-size: 16px;
+        line-height: 1;
+      }
+
+      .selected-query-badge .badge-clear:hover {
+        color: #dc3545;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- ── Navbar ── -->
+    <nav class="navbar">
+      <a href="index.html" class="brand">⚙ Query Tool</a>
+      <ul class="nav-links">
+        <li><a href="index.html">DB Config</a></li>
+        <li><a href="query-management.html">Queries</a></li>
+        <li><a href="query-execution.html" class="active">Execute</a></li>
+        <li><a href="audit-logs.html">Audit Logs</a></li>
+      </ul>
+    </nav>
+
+    <div class="container">
+      <h1 class="page-title">Query Execution</h1>
+
+      <!-- ── Scratchpad Card (Temp Query Testing) ── -->
+      <div class="card">
+        <div class="scratchpad-toggle" id="scratchpadToggle">
+          <span class="toggle-icon">▶</span>
+          <span style="font-size: 15px; font-weight: 700; color: #1e3a5f">
+            🧪 Temp Query Scratchpad
+          </span>
+          <span style="font-size: 12px; color: #888; margin-left: 4px">
+            — test any query without saving
+          </span>
+        </div>
+
+        <div class="scratchpad-body" id="scratchpadBody">
+          <div id="scratchpadAlert" class="alert"></div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="scratchDbType">Database Type</label>
+              <select id="scratchDbType">
+                <option value="">-- Select DB Type --</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="scratchConnection">Connection</label>
+              <select id="scratchConnection" disabled>
+                <option value="">-- Select DB Type first --</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="scratchQuery">SQL Query</label>
+            <textarea
+              id="scratchQuery"
+              rows="4"
+              placeholder="e.g. SELECT * FROM employees WHERE department = 'Engineering'"
+            ></textarea>
+          </div>
+
+          <div
+            style="
+              display: flex;
+              align-items: center;
+              gap: 12px;
+              flex-wrap: wrap;
+            "
+          >
+            <button class="btn btn-success" id="scratchRunBtn" disabled>
+              ▶ Run Temp Query
+            </button>
+            <button class="btn btn-secondary" id="scratchClearBtn">
+              Clear
+            </button>
+            <div
+              class="form-group"
+              style="margin: 0; display: flex; align-items: center; gap: 8px"
+            >
+              <label style="margin: 0; white-space: nowrap"
+                >Rows per page</label
+              >
+              <select id="scratchPageSize" style="width: 80px; padding: 8px">
+                <option value="10">10</option>
+                <option value="25">25</option>
+                <option value="50" selected>50</option>
+                <option value="100">100</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Scratchpad Results -->
+          <div id="scratchResultsArea" style="margin-top: 20px; display: none">
+            <div
+              id="scratchSummary"
+              style="font-size: 13px; color: #555; margin-bottom: 12px"
+            ></div>
+            <div id="scratchSpinner" class="spinner">Running query...</div>
+            <div
+              class="table-wrapper"
+              id="scratchTableWrapper"
+              style="display: none"
+            >
+              <table>
+                <thead id="scratchTableHead"></thead>
+                <tbody id="scratchTableBody"></tbody>
+              </table>
+            </div>
+            <div
+              id="scratchEmptyState"
+              class="empty-state"
+              style="display: none"
+            >
+              Query returned no results.
+            </div>
+            <div
+              class="pagination"
+              id="scratchPagination"
+              style="display: none"
+            >
+              <button id="scratchPrevBtn" disabled>← Prev</button>
+              <span id="scratchPageInfo"></span>
+              <button id="scratchNextBtn">Next →</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- ── Saved Queries Card ── -->
+      <div class="card">
+        <h2 class="card-title">Saved Queries</h2>
+
+        <!-- Live Search + Filter Row -->
+        <div
+          style="
+            display: flex;
+            gap: 16px;
+            align-items: flex-end;
+            flex-wrap: wrap;
+            margin-bottom: 8px;
+          "
+        >
+          <div
+            class="search-wrapper"
+            style="flex: 1; min-width: 220px; margin-bottom: 0"
+          >
+            <span class="search-icon">🔍</span>
+            <input
+              type="text"
+              id="searchInput"
+              placeholder="Search by name or description..."
+              autocomplete="off"
+            />
+          </div>
+          <div class="form-group" style="margin: 0; min-width: 200px">
+            <label for="filterDbType">Filter by DB Type</label>
+            <select id="filterDbType">
+              <option value="">-- All Types --</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="search-count" id="searchCount"></div>
+
+        <div id="tableAlert" class="alert"></div>
+        <div id="tableSpinner" class="spinner">Loading queries...</div>
+
+        <div class="table-wrapper" id="tableWrapper" style="display: none">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Name</th>
+                <th>Description</th>
+                <th>DB Type</th>
+                <th>Query Preview</th>
+                <th>Created At</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="queryTableBody"></tbody>
+          </table>
+        </div>
+
+        <div id="emptyState" class="empty-state" style="display: none">
+          No queries found.
+        </div>
+      </div>
+      <!-- ── Main Execution Card ── -->
+      <div class="card">
+        <h2 class="card-title">Select and Execute</h2>
+
+        <!-- Step Indicators -->
+        <div class="steps">
+          <div class="step active" id="step1Indicator">
+            <div class="step-circle">1</div>
+            <div class="step-label">DB Type</div>
+          </div>
+          <div class="step-line" id="line1"></div>
+          <div class="step" id="step2Indicator">
+            <div class="step-circle">2</div>
+            <div class="step-label">Connection</div>
+          </div>
+          <div class="step-line" id="line2"></div>
+          <div class="step" id="step3Indicator">
+            <div class="step-circle">3</div>
+            <div class="step-label">Query</div>
+          </div>
+        </div>
+
+        <!-- Alert -->
+        <div id="executionAlert" class="alert"></div>
+
+        <!-- Step 1 — DB Type -->
+        <div class="form-group">
+          <label for="dbTypeSelect">Step 1 — Select Database Type</label>
+          <select id="dbTypeSelect">
+            <option value="">-- Select DB Type --</option>
+          </select>
+        </div>
+
+        <!-- Step 2 — Connection -->
+        <div class="form-group">
+          <label for="connectionSelect">Step 2 — Select Connection</label>
+          <select id="connectionSelect" disabled>
+            <option value="">-- Select a DB Type first --</option>
+          </select>
+        </div>
+
+        <!-- Step 3 — Query Search -->
+        <div class="form-group">
+          <label>Step 3 — Search and Select Query</label>
+          <div class="search-wrapper" id="querySearchWrapper">
+            <span class="search-icon">🔍</span>
+            <input
+              type="text"
+              id="querySearchInput"
+              placeholder="Select a connection first..."
+              disabled
+              autocomplete="off"
+            />
+            <div class="search-results" id="querySearchResults"></div>
+          </div>
+
+          <!-- Selected query badge -->
+          <div class="selected-query-badge" id="selectedQueryBadge">
+            <span>📄</span>
+            <span class="badge-name" id="selectedQueryName"></span>
+            <button
+              class="badge-clear"
+              id="clearQueryBtn"
+              title="Clear selection"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+
+        <!-- Query Preview -->
+        <div id="queryPreviewBox" style="display: none">
+          <div class="form-group">
+            <label>Query Preview</label>
+            <div
+              id="queryPreview"
+              style="
+                background: #f0f2f5;
+                border: 1px solid #d1d9e0;
+                border-radius: 6px;
+                padding: 12px 16px;
+                font-family: &quot;Courier New&quot;, monospace;
+                font-size: 13px;
+                color: #1e3a5f;
+                white-space: pre-wrap;
+                word-break: break-word;
+              "
+            ></div>
+          </div>
+          <div
+            id="queryDescriptionText"
+            style="
+              font-size: 13px;
+              color: #666;
+              margin-bottom: 16px;
+              font-style: italic;
+            "
+          ></div>
+        </div>
+
+        <!-- Page Size + Buttons -->
+        <div
+          style="
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            flex-wrap: wrap;
+            margin-top: 8px;
+          "
+        >
+          <div
+            class="form-group"
+            style="margin: 0; display: flex; align-items: center; gap: 8px"
+          >
+            <label style="margin: 0; white-space: nowrap">Rows per page</label>
+            <select id="pageSizeSelect" style="width: 80px; padding: 8px">
+              <option value="10">10</option>
+              <option value="25">25</option>
+              <option value="50" selected>50</option>
+              <option value="100">100</option>
+            </select>
+          </div>
+          <button class="btn btn-success" id="executeBtn" disabled>
+            ▶ Execute Query
+          </button>
+          <button class="btn btn-secondary" id="resetBtn">Reset</button>
+        </div>
+      </div>
+
+      <!-- ── Results Card ── -->
+      <div class="card" id="resultsCard" style="display: none">
+        <h2 class="card-title">Query Results</h2>
+
+        <div
+          id="resultSummary"
+          style="
+            font-size: 13px;
+            color: #555;
+            margin-bottom: 16px;
+            display: flex;
+            gap: 24px;
+            flex-wrap: wrap;
+          "
+        ></div>
+
+        <div id="resultsSpinner" class="spinner">Executing query...</div>
+
+        <div
+          class="table-wrapper"
+          id="resultsTableWrapper"
+          style="display: none"
+        >
+          <table>
+            <thead id="resultsTableHead"></thead>
+            <tbody id="resultsTableBody"></tbody>
+          </table>
+        </div>
+
+        <div id="resultsEmptyState" class="empty-state" style="display: none">
+          Query returned no results.
+        </div>
+
+        <div class="pagination" id="pagination" style="display: none">
+          <button id="prevBtn" disabled>← Prev</button>
+          <span id="pageInfo"></span>
+          <button id="nextBtn">Next →</button>
+        </div>
+      </div>
+    </div>
+
+    <script src="js/api.js"></script>
+    <script src="js/query-execution.js"></script>
+  </body>
+</html>

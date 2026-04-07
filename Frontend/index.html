@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Query Tool — DB Config</title>
+    <link rel="stylesheet" href="css/style.css" />
+  </head>
+  <body>
+    <!-- ── Navbar ── -->
+    <nav class="navbar">
+      <a href="index.html" class="brand">⚙ Query Tool</a>
+      <ul class="nav-links">
+        <li><a href="index.html" class="active">DB Config</a></li>
+        <li><a href="query-management.html">Queries</a></li>
+        <li><a href="query-execution.html">Execute</a></li>
+        <li><a href="audit-logs.html">Audit Logs</a></li>
+      </ul>
+    </nav>
+
+    <!-- ── Page Content ── -->
+    <div class="container">
+      <h1 class="page-title">Database Configuration</h1>
+
+      <!-- ── Add Config Form Card ── -->
+      <div class="card">
+        <h2 class="card-title">Add New Configuration</h2>
+
+        <!-- Alert Box -->
+        <div id="formAlert" class="alert"></div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="dbName">Configuration Name</label>
+            <input type="text" id="dbName" placeholder="e.g. Local Client DB" />
+          </div>
+          <div class="form-group">
+            <label for="dbType">Database Type</label>
+            <select id="dbType">
+              <option value="">-- Select Type --</option>
+              <option value="MSSQL">MSSQL</option>
+              <option value="MYSQL">MySQL</option>
+              <option value="POSTGRESQL">PostgreSQL</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="host">Host</label>
+            <input type="text" id="host" placeholder="e.g. localhost" />
+          </div>
+          <div class="form-group">
+            <label for="port">Port</label>
+            <input type="number" id="port" placeholder="e.g. 1433" />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="databaseName">Database Name</label>
+          <input type="text" id="databaseName" placeholder="e.g. client_db" />
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="username">Username</label>
+            <input type="text" id="username" placeholder="e.g. sa" />
+          </div>
+          <div class="form-group">
+            <label for="password">Password</label>
+            <input type="password" id="password" placeholder="Enter password" />
+          </div>
+        </div>
+
+        <!-- Buttons -->
+        <div class="btn-group">
+          <button class="btn btn-secondary" id="testBtn">
+            Test Connection
+          </button>
+          <button class="btn btn-primary" id="saveBtn" disabled>
+            Save Configuration
+          </button>
+        </div>
+      </div>
+
+      <!-- ── Saved Configurations Table Card ── -->
+      <div class="card">
+        <h2 class="card-title">Saved Configurations</h2>
+
+        <!-- Alert Box -->
+        <div id="tableAlert" class="alert"></div>
+
+        <!-- Spinner -->
+        <div id="tableSpinner" class="spinner">Loading configurations...</div>
+
+        <!-- Table -->
+        <div class="table-wrapper" id="tableWrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Config Name</th>
+                <th>DB Type</th>
+                <th>Host</th>
+                <th>Port</th>
+                <th>Database</th>
+                <th>Username</th>
+                <th>Created At</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="configTableBody">
+              <!-- Filled by db-config.js -->
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Empty State -->
+        <div id="emptyState" class="empty-state" style="display: none">
+          No configurations saved yet. Add one above.
+        </div>
+      </div>
+    </div>
+
+    <script src="js/api.js"></script>
+    <script src="js/db-config.js"></script>
+  </body>
+</html>
